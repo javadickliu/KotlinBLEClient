@@ -29,8 +29,6 @@ class DataControlActivity : AppCompatActivity() {
             } else if (msg.what == 2) {
                 deviceStatusTv!!.text = "Status:" + "断开连接"
             }
-
-
         }
     }
 
