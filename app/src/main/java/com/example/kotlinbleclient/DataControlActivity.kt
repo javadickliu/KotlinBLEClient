@@ -8,6 +8,10 @@ import android.widget.ExpandableListView
 import android.widget.TextView
 import com.example.kotlinbleclient.adpter.MyExpandListViewAdapter
 import java.util.ArrayList
+import android.R.attr.data
+import android.bluetooth.BluetoothGattDescriptor
+
+
 
 
 class DataControlActivity : AppCompatActivity() {
@@ -16,12 +20,12 @@ class DataControlActivity : AppCompatActivity() {
     private var myExpandListViewAdapter: MyExpandListViewAdapter? = null
     private var expandableListView: ExpandableListView? = null
 
-    private  lateinit var temp1: List<String>
-    private  lateinit var temp2: List<List<BluetoothGattCharacteristic>>
+    private lateinit var temp1: List<String>
+    private lateinit var temp2: List<List<BluetoothGattCharacteristic>>
     private val updataUIHandler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
-            Log.d(TAG, "handleMessage: updataui !!!!!!!!!! thread2222=" + (Looper.getMainLooper() == Looper.myLooper()))
+            Log.d(TAG, "handleMessage: updataui 刷新列表 当前线程 =" + (Looper.getMainLooper() == Looper.myLooper()))
             if (msg.what == 0) {//刷新service
                 myExpandListViewAdapter!!.updataMyData(temp1, temp2)
             } else if (msg.what == 1) {
@@ -47,8 +51,12 @@ class DataControlActivity : AppCompatActivity() {
         myExpandListViewAdapter = MyExpandListViewAdapter()
         expandableListView!!.setAdapter(myExpandListViewAdapter)
         Log.d(TAG, "onCreate: myExpandListViewAdapter=" + myExpandListViewAdapter!!)
-        val bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, false, MyBluetoothGattCallback())
+        val bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, true, MyBluetoothGattCallback())
+
+        //========
+        Log.d(TAG, "onCreate: address=" + bluetoothDevice.address+" name="+bluetoothDevice.name+" "+bluetoothDevice.uuids)
     }
+
 
 
     private fun parseBondState(state: Int): String {
@@ -75,8 +83,10 @@ class DataControlActivity : AppCompatActivity() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {//连接BLE设备GATT结果回调
             super.onConnectionStateChange(gatt, status, newState)
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.d(TAG, "Attempting to start service discovery: 连接GATT成功" + gatt.discoverServices())
+                Log.d(TAG, "Attempting to start service discovery: 连接GATT成功")
                 updataUIHandler.sendEmptyMessageDelayed(1, 0)
+                gatt.discoverServices()
+                Log.d(TAG, "Attempting to start service discovery: 连接GATT成功111 ")
 
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -85,34 +95,78 @@ class DataControlActivity : AppCompatActivity() {
             }
         }
 
+        /**
+         * 连接蓝牙成功
+         */
         override fun onServicesDiscovered(
             gatt: BluetoothGatt,
             status: Int
         ) {//BLE设备的Service连接成功,调用这个回调才表示蓝牙真正建立连接,gatt.discoverServices()
             super.onServicesDiscovered(gatt, status)
             if (status == BluetoothGatt.GATT_SUCCESS) {//发现Service且连接成功
-
+                Log.d(TAG, "find service ok5")
                 //   initServiceAndChara(gatt);
-                //=================已经蓝牙设备UUID的基础上往蓝牙设备写数据===
-                val characteristic = gatt.getService(UUID_SERVICE).getCharacteristic(UUID_CHARACTERISTIC_WRITE)
-                val descriptor = characteristic.getDescriptor(UUID_DESCRIPTOR_NOTIFY)
-                //                // descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);//和通知类似,但服务端不主动发数据,只指示客户端读取数据
-                descriptor.value =
-                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE//使能Serivce的某个Characteristic的某个descriptor 才能收到回调
-                gatt.setCharacteristicNotification(characteristic, true)//设置读
-                gatt.writeDescriptor(descriptor)
-                characteristic.setValue(HexUtil.hexStringToBytes("lala"))
-                //todo  writeDescriptor和writeCharacteristic两个同时调用只能生效一个不能同时调用
-                try {
-                    Thread.sleep(1000)//延时
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
 
+            //    =========虾米智联写数据===
+                val characteristic = gatt.getService(UUID_SERVICE).getCharacteristic(SERVER_TX_UUID)
+                val tokenByte: ByteArray= byteArrayOf(0x00,0x00,0x00,0xa0)
+                val orderByte: ByteArray= byteArrayOf(0x00)
+                Log.d(TAG, "find service ok 111111111111")
+              val isSetValue = characteristic.setValue(BLEDeviceCommand.parseBLEByte(BLEDeviceCommand.COMMAND_OPEN_BIKE,tokenByte,orderByte))
+                val isSetValue = characteristic.setValue(tokenByte)
+                characteristic.setValue()
+                Log.d(TAG, "find service ok: isSetValue1 =" + isSetValue)
                 gatt.writeCharacteristic(characteristic)
+                // gatt.readCharacteristic(characteristic)
+
+
+////                //=================已经蓝牙设备UUID的基础上往蓝牙设备写数据===
+//                val characteristic = gatt.getService(UUID_SERVICE).getCharacteristic(SERVER_RX_UUID)
+//            //    val descriptor = characteristic.getDescriptor(SERVER_RX_UUID)
+//                val defaultDescriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG)
+//                Log.d(TAG, "222222222 defaultDescriptor="+defaultDescriptor )
+//                //                // descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);//和通知类似,但服务端不主动发数据,只指示客户端读取数据
+//                    defaultDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+//
+//                gatt.writeDescriptor(defaultDescriptor)//使能Serivce的某个Characteristic的某个descriptor 才能收到回调
+//                gatt.setCharacteristicNotification(characteristic, true)//设置读
+//                //todo  writeDescriptor和writeCharacteristic两个同时调用只能生效一个不能同时调用
+//                try {
+//                    Thread.sleep(1000)//延时
+//                } catch (e: InterruptedException) {
+//                    e.printStackTrace()
+//                }
+//                characteristic.setValue(BLEDeviceCommand.getBikeInfo())
+//
+//
+//                gatt.writeCharacteristic(characteristic)
+//                Log.d(TAG, "!!!!!!!!!!!!!! " )
+
+//
+//            //=================已经蓝牙设备UUID的基础上往蓝牙设备写数据 自己测试===
+//                val characteristic = gatt.getService(UUID_SERVICE).getCharacteristic(SERVER_RX_UUID)
+//            //    val descriptor = characteristic.getDescriptor(SERVER_RX_UUID)
+//                val defaultDescriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG)
+//                Log.d(TAG, "222222222 defaultDescriptor="+defaultDescriptor )
+//                //                // descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);//和通知类似,但服务端不主动发数据,只指示客户端读取数据
+//                    defaultDescriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)
+//
+//                gatt.writeDescriptor(defaultDescriptor)//使能Serivce的某个Characteristic的某个descriptor 才能收到回调
+//                gatt.setCharacteristicNotification(characteristic, true)//设置读
+//                //todo  writeDescriptor和writeCharacteristic两个同时调用只能生效一个不能同时调用
+//                try {
+//                    Thread.sleep(1000)//延时
+//                } catch (e: InterruptedException) {
+//                    e.printStackTrace()
+//                }
+//                characteristic.setValue(BLEDeviceCommand.getBikeInfo())
+//
+//
+//                gatt.writeCharacteristic(characteristic)
+//                Log.d(TAG, "!!!!!!!!!!!!!! " )
 
                 //====================
-                Log.d(TAG, "onLeScan211: CuurentThread=" + (Looper.myLooper() == Looper.getMainLooper()))
+/*                Log.d(TAG, "onLeScan211: services size=" + gatt.services.size)
                 val bluetoothGattServices = gatt.services
                 val gorupList = ArrayList<String>()
                 val childList = ArrayList<List<BluetoothGattCharacteristic>>()
@@ -124,7 +178,7 @@ class DataControlActivity : AppCompatActivity() {
                     for (j in 0 until bluetoothGattServices[i].characteristics.size) {
                         childTemp.add(bluetoothGattServices[i].characteristics[j])
                         if (j == bluetoothGattServices[i].characteristics.size - 1) {
-                            Log.d(TAG, "onServicesDiscovered: 1122111")
+                            Log.d(TAG, "onServicesDiscovered: 发现新的characteristics 加入集合")
                             childList.add(childTemp)
                         }
                     }
@@ -137,11 +191,11 @@ class DataControlActivity : AppCompatActivity() {
                 //                }
                 temp1 = gorupList
                 temp2 = childList
-                updataUIHandler.sendEmptyMessageDelayed(0, 0)
-                for (index in bluetoothGattServices) {
-                    Log.d(TAG, "onServicesDiscovered: 服务连接成功 index=")
-                }
-                Log.d(TAG, "onServicesDiscovered: GATT 服务连接成功 status=$status")
+                updataUIHandler.sendEmptyMessageDelayed(0, 0)*/
+//                for (index in bluetoothGattServices) {
+//                    Log.d(TAG, "onServicesDiscovered: 服务连接成功 index=")
+//                }
+                //       Log.d(TAG, "onServicesDiscovered: GATT 服务连接成功 status=$status")
             } else {
                 Log.d(TAG, "onServicesDiscovered: GATT 服务连接失败 status=$status")
             }
@@ -163,7 +217,10 @@ class DataControlActivity : AppCompatActivity() {
             status: Int
         ) {//从Service读数据的结果回调
             super.onCharacteristicWrite(gatt, characteristic, status)
-            Log.d(TAG, "onCharacteristicWrite: ")
+            for (index in characteristic.value) {
+                Log.d(TAG, "onCharacteristicWrite: index= " + index)
+            }
+            Log.d(TAG, "onCharacteristicWrite: response= " + characteristic.value.size)
         }
 
         override fun onCharacteristicChanged(
@@ -172,7 +229,7 @@ class DataControlActivity : AppCompatActivity() {
         ) {//BLE服务端数据读取成功会回调;一般在此接收BLE设备的回调数据
             super.onCharacteristicChanged(gatt, characteristic)
             val valueStr = String(characteristic.value)
-            Log.d(TAG, "onCharacteristicChanged: characteristic111111111111111111111111111=$valueStr")
+            Log.d(TAG, "onCharacteristicChanged: 2222222=$valueStr"+" value="+characteristic.value[0])
         }
 
         override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
@@ -268,17 +325,24 @@ class DataControlActivity : AppCompatActivity() {
     //        }
     //    }
     override fun onDestroy() {
-        Log.d(TAG, "onDestroy: ")
+        Log.d(TAG, "onDestroy1121112: ")
         super.onDestroy()
     }
 
     companion object {
         private val TAG = "DataControlActivity"
+//        private val UUID_SERVICE =
+//            java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")//蓝牙串口的通用UUID,UUID是什么东西
+//        private val UUID_CHARACTERISTIC_READ = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FC")
+//        private val UUID_CHARACTERISTIC_WRITE = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FD")
+//        private val UUID_DESCRIPTOR = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FE")
+//        private val UUID_DESCRIPTOR_NOTIFY = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FF")
+
         private val UUID_SERVICE =
-            java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")//蓝牙串口的通用UUID,UUID是什么东西
-        private val UUID_CHARACTERISTIC_READ = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FC")
-        private val UUID_CHARACTERISTIC_WRITE = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FD")
-        private val UUID_DESCRIPTOR = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FE")
-        private val UUID_DESCRIPTOR_NOTIFY = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FF")
+            java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7")//蓝牙串口的通用UUID,UUID是什么东西
+        private val SERVER_TX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CBA")//写CHARACTERISTIC
+        private val SERVER_RX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB9")//读CHARACTERISTIC
+        private val CLIENT_CHARACTERISTIC_CONFIG = java.util.UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")//默认de
+
     }
 }

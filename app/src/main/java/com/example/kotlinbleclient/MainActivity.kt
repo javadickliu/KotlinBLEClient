@@ -33,11 +33,17 @@ class MainActivity : AppCompatActivity() {
     val UUID_DESCRIPTOR: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FE")
     val UUID_DESCRIPTOR_NOTIFY: UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FF")
 
+    companion object {
+        private val TAG = "MainActivity"
+    }
 
+    internal var serviceUuids = arrayOfNulls<UUID>(1)
     lateinit var bluetoothAdapter: BluetoothAdapter
     lateinit var deviceList: ArrayList<BluetoothDevice>
     lateinit var rcAdapter: RCAdapter
     var recyclerView: RecyclerView? = null
+
+    var myLeScanCallback: MyLeScanCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +57,13 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION), 1)
         }
         initView()
+        //   serviceUuids.set(0, UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7"))
+        serviceUuids[0] = UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7")
+        myLeScanCallback = MyLeScanCallback()
+
+        val tokenByte: ByteArray= byteArrayOf(0x00,0x00,0x00,0x7b)
+        val orderByte: ByteArray= byteArrayOf(0x01)
+        BLEDeviceCommand.parseBLEByte(BLEDeviceCommand.COMMAND_OPEN_BIKE,tokenByte,orderByte)
     }
 
     /**
@@ -58,6 +71,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun initView(): Unit {
         mainactivity_startscan_btn.setOnClickListener(clickListener)
+        mainactivity_openbike.setOnClickListener(clickListener)
         mainactivity_bledevice_rc.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         mainactivity_bledevice_rc.layoutManager = LinearLayoutManager(this)
         deviceList = ArrayList<BluetoothDevice>()
@@ -84,7 +98,30 @@ class MainActivity : AppCompatActivity() {
      */
     private val clickListener = View.OnClickListener { v ->
         when (v.id) {
-            R.id.mainactivity_startscan_btn -> {
+//            R.id.mainactivity_startscan_btn -> {
+//                val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+//                bluetoothAdapter = bluetoothManager.adapter
+//                if (bluetoothAdapter == null) {
+//                    toast("设备不支持蓝牙")
+//                } else {
+//                    if (!bluetoothAdapter.isEnabled()) {//蓝牙未打开
+//                        toast("蓝牙未打开,请打开蓝牙")
+//                        val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+//                        startActivityForResult(enableBtIntent, 1)
+//                    } else {//已经打开蓝牙
+//                             val ifStartLeScan = bluetoothAdapter.startLeScan(callback)
+//                 //       bluetoothAdapter.startDiscovery()
+//                    //   val ifStartLeScan = bluetoothAdapter.startLeScan(serviceUuids, callback)
+//                        if (ifStartLeScan) {
+//                            toast("BLE已经打开成功,开始扫描")
+//                            //    Log.d(TAG, "onCreate: 开始扫描")
+//                        } else {
+//                            //             Log.d(TAG, "onCreate: 禁止扫描")
+//                        }
+//                    }
+//                }
+//            }
+            R.id.mainactivity_openbike -> {//开锁
                 val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
                 bluetoothAdapter = bluetoothManager.adapter
                 if (bluetoothAdapter == null) {
@@ -95,48 +132,87 @@ class MainActivity : AppCompatActivity() {
                         val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
                         startActivityForResult(enableBtIntent, 1)
                     } else {//已经打开蓝牙
-                        val ifStartLeScan = bluetoothAdapter.startLeScan(callback)
+                        ifAlreadyFind = true
+                        val ifStartLeScan = bluetoothAdapter.startLeScan(myLeScanCallback)
                         if (ifStartLeScan) {
                             toast("BLE已经打开成功,开始扫描")
-                            //    Log.d(TAG, "onCreate: 开始扫描")
                         } else {
-                            //             Log.d(TAG, "onCreate: 禁止扫描")
+                            toast("BLE扫描启动失败")
                         }
                     }
                 }
             }
         }
+
     }
 
+    var ifAlreadyFind = false
 
     /**
      * 搜索BLE设备结果
      */
-    internal val callback: BluetoothAdapter.LeScanCallback =
-        BluetoothAdapter.LeScanCallback { device, rssi, scanRecord ->
-            val deviceName = device.name
-            val deviceHardwareAddress = device.address
-            if (deviceName != null) {//判断是否该设备已经搜索到
-                var ifFindDevie = false
-                if (deviceList.size == 0) {
-                    //     Log.d(TAG, "onReceive: 初次添加蓝牙设备到集合1")
-                    deviceList.add(device)
-                    rcAdapter.setmDatas(deviceList)
-                    rcAdapter.notifyDataSetChanged()//刷新list
-                }
-                for (i in deviceList.indices) {//去重
-                    if (deviceList.get(i).address == deviceHardwareAddress) {
-                        ifFindDevie = true
-                    }
-                    if (i == deviceList.size - 1 && !ifFindDevie) {//没有发现过的设备添加到list
-                        deviceList.add(device)
-                        //   Log.d(TAG, "onReceive: 新设备添加到list devicename=" + deviceName + " size=" + deviceList.size)
-                        rcAdapter.setmDatas(deviceList)
-                        rcAdapter.notifyDataSetChanged()
-                    }
-                }
+    inner class MyLeScanCallback : BluetoothAdapter.LeScanCallback {
+        override fun onLeScan(device: BluetoothDevice?, rssi: Int, scanRecord: ByteArray?) {
+
+            val deviceName = device!!.name
+            if (deviceName != null && deviceName.equals("xbcx-test") && ifAlreadyFind) {//找到指定名称的蓝牙设备
+                bluetoothAdapter.stopLeScan(myLeScanCallback)
+                ifAlreadyFind = false
+                Log.d(TAG, "找到指定蓝牙设备 ")
+                val intent = Intent(this@MainActivity, DataControlActivity::class.java)
+                intent.putExtra("key_bluetoothdevice", device)
+                startActivity(intent)
             }
+
+
         }
+
+    }
+//     val callback: BluetoothAdapter.LeScanCallback =
+//        BluetoothAdapter.LeScanCallback { device, rssi, scanRecord ->
+//
+//            val deviceName = device.name
+//            if(deviceName!=null&&deviceName.equals("xbcx-test")&&ifAlreadyFind){//找到指定名称的蓝牙设备
+//            //   bluetoothAdapter.stopLeScan(callback)
+//                ifAlreadyFind=false
+//                Log.d(TAG, "找到指定蓝牙设备 ")
+//                val intent = Intent(this@MainActivity, DataControlActivity::class.java)
+//                intent.putExtra("key_bluetoothdevice", device)
+//                startActivity(intent)
+//            }
+//
+//
+//
+//
+//
+//
+////            val deviceName = device.name
+////            val deviceHardwareAddress = device.address
+////
+////            Log.d("MainActivity", "onReceive: 新设备t devicename1=" + deviceName + " deviceHardwareAddress=" + deviceHardwareAddress)
+////            if (deviceName != null) {//判断是否该设备已经搜索到
+////                var ifFindDevie = false
+////                val parcelUuid = device.uuids
+////                Log.d("MainActivity", "onReceive:  parcelUuid=" + parcelUuid.size)
+////                if (deviceList.size == 0) {
+////                    //     Log.d(TAG, "onReceive: 初次添加蓝牙设备到集合1")
+////                    deviceList.add(device)
+////                    rcAdapter.setmDatas(deviceList)
+////                    rcAdapter.notifyDataSetChanged()//刷新list
+////                }
+////                for (i in deviceList.indices) {//去重
+////                    if (deviceList.get(i).address == deviceHardwareAddress) {
+////                        ifFindDevie = true
+////                    }
+////                    if (i == deviceList.size - 1 && !ifFindDevie) {//没有发现过的设备添加到list
+////                        deviceList.add(device)
+////                        //   Log.d(TAG, "onReceive: 新设备添加到list devicename=" + deviceName + " size=" + deviceList.size)
+////                        rcAdapter.setmDatas(deviceList)
+////                        rcAdapter.notifyDataSetChanged()
+////                    }
+////                }
+////            }
+//        }
 
 
     /**
@@ -146,7 +222,7 @@ class MainActivity : AppCompatActivity() {
         override fun onClick(view: View, positon: Int) {
             if (bluetoothAdapter != null) {
                 //       Log.d(TAG, "onClick: 开始连接BLE设备停止扫描")
-                bluetoothAdapter.stopLeScan(callback)
+                bluetoothAdapter.stopLeScan(myLeScanCallback)
             }
             val intent = Intent(this@MainActivity, DataControlActivity::class.java)
             intent.putExtra("key_bluetoothdevice", rcAdapter.getmDatas()!![positon])

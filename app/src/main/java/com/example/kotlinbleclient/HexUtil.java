@@ -1,5 +1,7 @@
 package com.example.kotlinbleclient;
 
+import java.util.UUID;
+
 public class HexUtil {
     private static final char[] DIGITS_LOWER = {'0', '1', '2', '3', '4', '5',
             '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
@@ -7,6 +9,7 @@ public class HexUtil {
     private static final char[] DIGITS_UPPER = {'0', '1', '2', '3', '4', '5',
             '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
+    UUID[] serviceUuids=new UUID[1];
     public static char[] encodeHex(byte[] data) {
         return encodeHex(data, true);
     }
@@ -83,6 +86,22 @@ public class HexUtil {
         return out;
     }
 
+    /**
+     * 临时添加的
+     * @param bytes
+     * @return
+     */
+    public static String bytesToHexString(byte[] bytes) {
+        String result = "";
+        for (int i = 0; i < bytes.length; i++) {
+            String hexString = Integer.toHexString(bytes[i] & 0xFF);
+            if (hexString.length() == 1) {
+                hexString = '0' + hexString;
+            }
+            result += hexString.toUpperCase();
+        }
+        return result;
+    }
 
     protected static int toDigit(char ch, int index) {
         int digit = Character.digit(ch, 16);
