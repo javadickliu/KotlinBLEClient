@@ -109,12 +109,12 @@ class DataControlActivity : AppCompatActivity() {
 
             //    =========虾米智联写数据===
                 val characteristic = gatt.getService(UUID_SERVICE).getCharacteristic(SERVER_TX_UUID)
-                val tokenByte: ByteArray= byteArrayOf(0x00,0x00,0x00,0xa0)
+                val tokenByte: ByteArray= ByteUtil.putInt(123)
                 val orderByte: ByteArray= byteArrayOf(0x00)
                 Log.d(TAG, "find service ok 111111111111")
-              val isSetValue = characteristic.setValue(BLEDeviceCommand.parseBLEByte(BLEDeviceCommand.COMMAND_OPEN_BIKE,tokenByte,orderByte))
-                val isSetValue = characteristic.setValue(tokenByte)
-                characteristic.setValue()
+                  val isSetValue = characteristic.setValue(BLEDeviceCommand.parseBLEByte(BLEDeviceCommand.COMMAND_OPEN_BIKE,tokenByte,orderByte))
+            //    val isSetValue = characteristic.setValue(tokenByte)
+              //  characteristic.setValue()
                 Log.d(TAG, "find service ok: isSetValue1 =" + isSetValue)
                 gatt.writeCharacteristic(characteristic)
                 // gatt.readCharacteristic(characteristic)

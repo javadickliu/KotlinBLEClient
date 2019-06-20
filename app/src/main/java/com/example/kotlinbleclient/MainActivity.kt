@@ -61,9 +61,30 @@ class MainActivity : AppCompatActivity() {
         serviceUuids[0] = UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7")
         myLeScanCallback = MyLeScanCallback()
 
-        val tokenByte: ByteArray= byteArrayOf(0x00,0x00,0x00,0x7b)
+//        val tokenByte: ByteArray= byteArrayOf(0x00,0x00,0x00,0x7b)
+
+//        val orderByte: ByteArray = byteArrayOf(0x01)
+//        val string = "0a"
+//        val byteArray = string.toByteArray()
+
+ //       val byteArray:ByteArray = Util.intToByteArray(150)
+//        val byteArray:ByteArray = byteArrayOf(0x2.toByte())//TODO C部分是0-255,我们发负的过去她自己会转换
+//        for (index in byteArray) {
+//            Log.d("test", "byte=" + index)
+//        }
+
+
+
+           //val intByte: ByteArray= byteArrayOf()
+        val tokenByte= ByteUtil.putInt(133555435)//todo int自动转四字节byte数组
+       // val tokenByte: ByteArray= byteArrayOf(0x00,0x00,0x00,0x10)//todo int转4字节16进制
         val orderByte: ByteArray= byteArrayOf(0x01)
-        BLEDeviceCommand.parseBLEByte(BLEDeviceCommand.COMMAND_OPEN_BIKE,tokenByte,orderByte)
+     //   val intByte: IntArray= intArrayOf(0x00,0x00,0x00,0x10)
+
+       val byteArray=  BLEDeviceCommand.parseBLEByte(BLEDeviceCommand.COMMAND_OPEN_BIKE, tokenByte, orderByte)
+        for (index in byteArray.indices) {
+            Log.d("test", "byte=" +byteArray[index]+"  indices="+index )//????
+        }
     }
 
     /**

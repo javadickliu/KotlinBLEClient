@@ -40,13 +40,17 @@ object BLEDeviceCommand {
         byteList.add(5, tokenArray[3])
         if (orderArray.isEmpty()) {//如果命令数据为空则数据只由token组成
             byteList.add(6, getCalSum(byteList))
+            Log.d("testByte", "AAAAAAAAAAAAAA" )
         } else {//如果命令数据不为空则数据由token组成和order组成
             byteList.add(6, orderArray[0])
-      //      byteList.add(7, getCalSum(byteList))
             byteList.add(7,getCalSum(byteList))
+            Log.d("testByte", "BBBBBBBBBBBBBBBBBBB")
+        }
+        for (index in byteList.indices) {
+         //   Log.d("testByte", "index1111=" + byteList.get(index)+" index="+index)
         }
         for (index in byteList) {
-            Log.d("testByte", "index=" + index)
+          //  Log.d("testByte", "index222=" + index+" byteList="+byteList)//?????????什么情况
         }
         return byteList.toByteArray()
     }
@@ -79,9 +83,10 @@ object BLEDeviceCommand {
 
     fun getCalSum(byteList: MutableList<Byte>): Byte {
         var sum: Int = 0
-        for (index in byteList.indices) {
+        for (index in byteList) {
             sum += index
         }
+        Log.d("testByte", "sum11=" + sum)
         return sum.toByte()
     }
 }
