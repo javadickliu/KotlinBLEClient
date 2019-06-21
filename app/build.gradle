@@ -34,4 +34,5 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'androidx.recyclerview:recyclerview:1.0.0'
     implementation "org.jetbrains.anko:anko:0.10.8"
+    implementation 'com.clj.fastble:FastBleLib:2.3.4'
 }

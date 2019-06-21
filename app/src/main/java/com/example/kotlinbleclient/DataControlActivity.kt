@@ -12,25 +12,28 @@ import android.R.attr.data
 import android.bluetooth.BluetoothGattDescriptor
 
 
-
-
 class DataControlActivity : AppCompatActivity() {
     private var deviceInfoTv: TextView? = null
     private var deviceStatusTv: TextView? = null
     private var myExpandListViewAdapter: MyExpandListViewAdapter? = null
     private var expandableListView: ExpandableListView? = null
+    private var bluetoothGatt: BluetoothGatt? = null
+
 
     private lateinit var temp1: List<String>
     private lateinit var temp2: List<List<BluetoothGattCharacteristic>>
     private val updataUIHandler = object : Handler(Looper.getMainLooper()) {
         override fun handleMessage(msg: Message) {
             super.handleMessage(msg)
-            Log.d(TAG, "handleMessage: updataui 刷新列表 当前线程 =" + (Looper.getMainLooper() == Looper.myLooper()))
+            //      Log.d(TAG, "handleMessage() 刷新连接状态 =" + (Looper.getMainLooper() == Looper.myLooper()))
             if (msg.what == 0) {//刷新service
+                Log.d(TAG, "handleMessage() 刷新设备列表")
                 myExpandListViewAdapter!!.updataMyData(temp1, temp2)
             } else if (msg.what == 1) {
+                Log.d(TAG, "handleMessage() 刷新至已连接状态")
                 deviceStatusTv!!.text = "Status:" + "已连接"
             } else if (msg.what == 2) {
+                Log.d(TAG, "handleMessage() 刷新至断开连接状态")
                 deviceStatusTv!!.text = "Status:" + "断开连接"
             }
         }
@@ -50,13 +53,28 @@ class DataControlActivity : AppCompatActivity() {
         expandableListView = findViewById(R.id.datacontrolactivity_bleservice_expandlv) as ExpandableListView
         myExpandListViewAdapter = MyExpandListViewAdapter()
         expandableListView!!.setAdapter(myExpandListViewAdapter)
-        Log.d(TAG, "onCreate: myExpandListViewAdapter=" + myExpandListViewAdapter!!)
-        val bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, true, MyBluetoothGattCallback())
+        //   Log.d(TAG, "onCreate: myExpandListViewAdapter=" + myExpandListViewAdapter!!)
+
+        //=======开启BLE 设备GATT======
+        Log.d(
+            TAG,
+            "onCreate() address=" + bluetoothDevice.address + " name=" + bluetoothDevice.name + " UUID=" + bluetoothDevice.uuids
+        )
+        if (bluetoothDevice.bondState == BluetoothDevice.BOND_NONE) {//没有绑定过
+            Log.d(TAG, "onCreate() 设备未连接过 开始建立GATT通路")
+            bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, true, MyBluetoothGattCallback(),BluetoothDevice.TRANSPORT_LE)
+            //todo 设置不自动重连速度是快但是经常连接上就马上断开
+            //todo 设置自动重连不容易断 连接成功率高  而且不容易断
+        } else if (bluetoothDevice.bondState == BluetoothDevice.BOND_BONDING) {//绑定中
+            Log.d(TAG, "onCreate() 设备连接中,不需要要再次连接")
+        } else if (bluetoothDevice.bondState == BluetoothDevice.BOND_BONDED) {
+            Log.d(TAG, "onCreate() 设备已经连接过,不需要要再次连接")
+        }
+
 
         //========
-        Log.d(TAG, "onCreate: address=" + bluetoothDevice.address+" name="+bluetoothDevice.name+" "+bluetoothDevice.uuids)
-    }
 
+    }
 
 
     private fun parseBondState(state: Int): String {
@@ -83,15 +101,20 @@ class DataControlActivity : AppCompatActivity() {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {//连接BLE设备GATT结果回调
             super.onConnectionStateChange(gatt, status, newState)
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.d(TAG, "Attempting to start service discovery: 连接GATT成功")
+                Log.d(TAG, "onConnectionStateChange()  连接GATT成功")
                 updataUIHandler.sendEmptyMessageDelayed(1, 0)
                 gatt.discoverServices()
-                Log.d(TAG, "Attempting to start service discovery: 连接GATT成功111 ")
 
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 updataUIHandler.sendEmptyMessageDelayed(2, 0)
-                Log.d(TAG, "Disconnected from GATT server.")
+                Log.d(TAG, "onConnectionStateChange  从GATT连接断开 status=" + status)
+                if (bluetoothGatt != null) {
+                    bluetoothGatt?.close()
+                    Thread.sleep(200)
+                    Log.d(TAG, "onConnectionStateChange 重连")
+                    bluetoothGatt?.connect()//todo 如果没有发送开锁命令成功且断开连接需要重连
+                }
             }
         }
 
@@ -103,19 +126,24 @@ class DataControlActivity : AppCompatActivity() {
             status: Int
         ) {//BLE设备的Service连接成功,调用这个回调才表示蓝牙真正建立连接,gatt.discoverServices()
             super.onServicesDiscovered(gatt, status)
-            if (status == BluetoothGatt.GATT_SUCCESS) {//发现Service且连接成功
-                Log.d(TAG, "find service ok5")
+            if (status == BluetoothGatt.GATT_SUCCESS) {//发现Service
+                Log.d(TAG, "onServicesDiscovered() 发现BLE设备的Service 且建立GATT连接成功")
                 //   initServiceAndChara(gatt);
 
-            //    =========虾米智联写数据===
+                //    =========虾米智联写数据===
                 val characteristic = gatt.getService(UUID_SERVICE).getCharacteristic(SERVER_TX_UUID)
-                val tokenByte: ByteArray= ByteUtil.putInt(123)
-                val orderByte: ByteArray= byteArrayOf(0x00)
-                Log.d(TAG, "find service ok 111111111111")
-                  val isSetValue = characteristic.setValue(BLEDeviceCommand.parseBLEByte(BLEDeviceCommand.COMMAND_OPEN_BIKE,tokenByte,orderByte))
-            //    val isSetValue = characteristic.setValue(tokenByte)
-              //  characteristic.setValue()
-                Log.d(TAG, "find service ok: isSetValue1 =" + isSetValue)
+                val tokenByte: ByteArray = ByteUtil.putInt(124)
+                val orderByte: ByteArray = byteArrayOf(0x00)
+                val isSetValue = characteristic.setValue(
+                    BLEDeviceCommand.parseBLEByte(
+                        BLEDeviceCommand.COMMAND_OPEN_BIKE,
+                        tokenByte,
+                        orderByte
+                    )
+                )
+                //    val isSetValue = characteristic.setValue(tokenByte)
+                //  characteristic.setValue()
+                //       Log.d(TAG, "find service ok: isSetValue1 =" + isSetValue)
                 gatt.writeCharacteristic(characteristic)
                 // gatt.readCharacteristic(characteristic)
 
@@ -229,7 +257,7 @@ class DataControlActivity : AppCompatActivity() {
         ) {//BLE服务端数据读取成功会回调;一般在此接收BLE设备的回调数据
             super.onCharacteristicChanged(gatt, characteristic)
             val valueStr = String(characteristic.value)
-            Log.d(TAG, "onCharacteristicChanged: 2222222=$valueStr"+" value="+characteristic.value[0])
+            Log.d(TAG, "onCharacteristicChanged: 2222222=$valueStr" + " value=" + characteristic.value[0])
         }
 
         override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
@@ -325,8 +353,12 @@ class DataControlActivity : AppCompatActivity() {
     //        }
     //    }
     override fun onDestroy() {
-        Log.d(TAG, "onDestroy1121112: ")
+        Log.d(TAG, "onDestroy")
         super.onDestroy()
+        if (bluetoothGatt != null) {
+            Log.d(TAG, "onDestroy  disconnect")
+            bluetoothGatt?.disconnect()
+        }
     }
 
     companion object {
@@ -342,7 +374,8 @@ class DataControlActivity : AppCompatActivity() {
             java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7")//蓝牙串口的通用UUID,UUID是什么东西
         private val SERVER_TX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CBA")//写CHARACTERISTIC
         private val SERVER_RX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB9")//读CHARACTERISTIC
-        private val CLIENT_CHARACTERISTIC_CONFIG = java.util.UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")//默认de
+        private val CLIENT_CHARACTERISTIC_CONFIG =
+            java.util.UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")//默认de
 
     }
 }

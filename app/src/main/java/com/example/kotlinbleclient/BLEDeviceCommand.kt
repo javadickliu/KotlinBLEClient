@@ -29,6 +29,7 @@ object BLEDeviceCommand {
     //val COMMAND_STOP_BIKE = 0x35 控制电池仓上锁
     /**
      * 获取指定类型BLE控制命令
+     * byteType:命令类型 tokenArray:动态token orderArray:命令操作
      */
     fun parseBLEByte(byteType: Byte, tokenArray: ByteArray, orderArray: ByteArray): ByteArray {
         val byteList = mutableListOf<Byte>()
