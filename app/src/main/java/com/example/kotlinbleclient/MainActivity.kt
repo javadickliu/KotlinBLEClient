@@ -304,7 +304,7 @@ class MainActivity : AppCompatActivity() {
             if (deviceName != null) {
                 Log.d(TAG, "找到指定蓝牙设备 deviceName= " + deviceName)
             }
-            if (deviceName != null && deviceName.equals("xbcx-test") && ifAlreadyFind) {//找到指定名称的蓝牙设备
+            if (deviceName != null && deviceName.equals("魅蓝") && ifAlreadyFind) {//找到指定名称的蓝牙设备xbcx-test
                 bluetoothAdapter.stopLeScan(myLeScanCallback)
                 ifAlreadyFind = false
                 Log.d(TAG, "找到指定蓝牙设备 type= "+   device.type)
