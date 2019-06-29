@@ -10,6 +10,12 @@ import com.example.kotlinbleclient.adpter.MyExpandListViewAdapter
 import java.util.ArrayList
 import android.R.attr.data
 import android.bluetooth.BluetoothGattDescriptor
+import android.content.Intent
+import android.view.View
+import com.example.kotlinbleclient.adpter.RCAdapter
+import com.example.kotlinbleclient.utils.ByteUtil
+import kotlinx.android.synthetic.main.activity_data_control.*
+import org.jetbrains.anko.toast
 
 
 class DataControlActivity : AppCompatActivity() {
@@ -18,7 +24,7 @@ class DataControlActivity : AppCompatActivity() {
     private var myExpandListViewAdapter: MyExpandListViewAdapter? = null
     private var expandableListView: ExpandableListView? = null
     private var bluetoothGatt: BluetoothGatt? = null
-
+    private var ifServiceConnect = false
 
     private lateinit var temp1: List<String>
     private lateinit var temp2: List<List<BluetoothGattCharacteristic>>
@@ -35,6 +41,12 @@ class DataControlActivity : AppCompatActivity() {
             } else if (msg.what == 2) {
                 Log.d(TAG, "handleMessage() 刷新至断开连接状态")
                 deviceStatusTv!!.text = "Status:" + "断开连接"
+            } else if (msg.what == 3) {
+                Log.d(TAG, "handleMessage() 刷新至已连接状态")
+                datacontrolactivity_servicestatus_tv.text = "Service Status:" + "已连接"
+            } else if (msg.what == 4) {
+                Log.d(TAG, "handleMessage() 刷新至断开连接状态")
+                datacontrolactivity_servicestatus_tv.text = "Service Status:" + "断开连接"
             }
         }
     }
@@ -49,7 +61,15 @@ class DataControlActivity : AppCompatActivity() {
                 "Name:" + bluetoothDevice.name
         deviceInfoTv!!.text = deviceInfo
         deviceStatusTv!!.text = "Status:" + "未连接"
-
+        datacontrolactivity_servicestatus_tv.setText("Service Status:" + "未连接")
+        datacontrolactivity_opennbike.setOnClickListener(btnClickListenr)
+        datacontrolactivity_stopbike.setOnClickListener(btnClickListenr)
+        datacontrolactivity_openbatlock.setOnClickListener(btnClickListenr)
+        datacontrolactivity_closebatlock.setOnClickListener(btnClickListenr)
+        datacontrolactivity_openwheellock.setOnClickListener(btnClickListenr)
+        datacontrolactivity_closewheellock.setOnClickListener(btnClickListenr)
+        datacontrolactivity_openelecric.setOnClickListener(btnClickListenr)
+        datacontrolactivity_closeelectric.setOnClickListener(btnClickListenr)
         expandableListView = findViewById(R.id.datacontrolactivity_bleservice_expandlv) as ExpandableListView
         myExpandListViewAdapter = MyExpandListViewAdapter()
         expandableListView!!.setAdapter(myExpandListViewAdapter)
@@ -62,7 +82,12 @@ class DataControlActivity : AppCompatActivity() {
         )
         if (bluetoothDevice.bondState == BluetoothDevice.BOND_NONE) {//没有绑定过
             Log.d(TAG, "onCreate() 设备未连接过 开始建立GATT通路1")
-            bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, false, MyBluetoothGattCallback())
+            bluetoothGatt = bluetoothDevice.connectGatt(
+                this@DataControlActivity,
+                true,
+                MyBluetoothGattCallback(),
+                BluetoothDevice.TRANSPORT_LE
+            )
             //todo 设置不自动重连速度是快但是经常连接上就马上断开
             //todo 设置自动重连不容易断 连接成功率高  而且不容易断
             //
@@ -72,11 +97,95 @@ class DataControlActivity : AppCompatActivity() {
             Log.d(TAG, "onCreate() 设备已经连接过,不需要要再次连接")
         }
 
-
-        //========
+        datacontrolactivity_reconnect.setOnClickListener {
+            if (ifServiceConnect) {
+                toast("已连接成功,不需要重连")
+            } else {
+                toast("重连中.....")
+                bluetoothGatt?.close()
+                bluetoothGatt?.disconnect()
+                bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, true, MyBluetoothGattCallback())
+            }
+        }
 
     }
 
+    /**
+     * 点击监听回调
+     */
+    private val btnClickListenr = object : View.OnClickListener {
+        override fun onClick(v: View?) {
+            var commandByte: Byte? = null
+            var tokenByte: ByteArray? = null
+            var orderByte: ByteArray? = null
+            when (v?.id) {
+                R.id.datacontrolactivity_opennbike -> {
+                    commandByte = BLEDeviceCommand.COMMAND_OPEN_BIKE
+                    tokenByte = ByteUtil.putInt(123)
+                    //      tokenByte = byteArrayOf(0x0a, 0x0a, 0x05, 0x05)
+                    orderByte = byteArrayOf(0x00)
+                }
+                R.id.datacontrolactivity_stopbike -> {
+                    commandByte = BLEDeviceCommand.COMMAND_STOP_BIKE
+                    tokenByte = ByteUtil.putInt(123)
+                    orderByte = byteArrayOf(0x01)
+                }
+                R.id.datacontrolactivity_openbatlock -> {
+                    commandByte = BLEDeviceCommand.COMMAND_OPEN_BATLOCK
+                    tokenByte = ByteUtil.putInt(123)
+                    orderByte = byteArrayOf(0x00)
+                }
+                R.id.datacontrolactivity_closebatlock -> {
+                    commandByte = BLEDeviceCommand.COMMAND_CLOSE_BATLOCK
+                    tokenByte = ByteUtil.putInt(123)
+                    orderByte = byteArrayOf(0x01)
+                }
+                R.id.datacontrolactivity_openwheellock -> {
+                    commandByte = BLEDeviceCommand.COMMAND_OPEN_WHELLLOCK
+                    tokenByte = ByteUtil.putInt(123)
+                    orderByte = byteArrayOf(0x00)
+                }
+                R.id.datacontrolactivity_closewheellock -> {
+                    commandByte = BLEDeviceCommand.COMMAND_CLOSE_WHELLLOCK
+                    tokenByte = ByteUtil.putInt(123)
+                    orderByte = byteArrayOf(0x01)
+                }
+                R.id.datacontrolactivity_openelecric -> {
+                    commandByte = BLEDeviceCommand.COMMAND_OPEN_ELECTIC
+                    tokenByte = ByteUtil.putInt(123)
+                    orderByte = byteArrayOf(0x01)
+                }
+                R.id.datacontrolactivity_closeelectric -> {
+                    commandByte = BLEDeviceCommand.COMMAND_CLOSE_ELECTIC
+                    tokenByte = ByteUtil.putInt(123)
+                    orderByte = byteArrayOf(0x00)
+                }
+            }
+            val bluetoothGattService = bluetoothGatt?.getService(UUID_SERVICE)
+            if (bluetoothGattService == null) {
+                Log.d(TAG, "onServicesDiscovered() 连接指定UUID的Service失败")
+            } else {
+                Log.d(TAG, "onServicesDiscovered() 连接指定UUID的Service成功")
+                val characteristic = bluetoothGattService.getCharacteristic(SERVER_TX_UUID)
+                if (characteristic == null) {
+                    Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics失败")
+                } else {
+                    Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics成功1 =" + characteristic.permissions)
+                    characteristic.setValue(
+                        BLEDeviceCommand.parseBLEByte(
+                            commandByte!!,
+                            tokenByte!!,
+                            orderByte!!
+                        )
+                    )
+                    bluetoothGatt?.writeCharacteristic(characteristic)
+                }
+
+            }
+
+        }
+
+    }
 
     private fun parseBondState(state: Int): String {
         var result = "错误"
@@ -120,12 +229,13 @@ class DataControlActivity : AppCompatActivity() {
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 updataUIHandler.sendEmptyMessageDelayed(2, 0)
+                updataUIHandler.sendEmptyMessageDelayed(4, 0)
                 Log.d(TAG, "onConnectionStateChange  从GATT连接断开 status=" + status)
                 if (bluetoothGatt != null) {
                     bluetoothGatt?.close()
                     Thread.sleep(200)
                     Log.d(TAG, "onConnectionStateChange 重连")
-                    bluetoothGatt?.connect()//todo 如果没有发送开锁命令成功且断开连接需要重连
+                    //   bluetoothGatt?.connect()//todo 如果没有发送开锁命令成功且断开连接需要重连
                 }
             }
         }
@@ -139,34 +249,35 @@ class DataControlActivity : AppCompatActivity() {
         ) {//BLE设备的Service连接成功,调用这个回调才表示蓝牙真正建立连接,gatt.discoverServices()
             super.onServicesDiscovered(gatt, status)
             if (status == BluetoothGatt.GATT_SUCCESS) {//发现Service成功
-                Log.d(TAG, "onServicesDiscovered() 发现BLE设备的Service 且建立GATT连接成功");
-                val bluetoothGattService = gatt.getService(UUID_SERVICE)
-                if (bluetoothGattService == null) {
-                    Log.d(TAG, "onServicesDiscovered() 连接指定UUID的Service失败")
-                } else {
-                    Log.d(TAG, "onServicesDiscovered() 连接指定UUID的Service成功")
-                    val characteristic = bluetoothGattService.getCharacteristic(UUID_CHARACTERISTIC_WRITE)
-                    if (characteristic == null) {
-                        Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics失败")
-                    } else {
-                        Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics成功1 =" + characteristic.permissions)
-                        val orderByte: ByteArray = byteArrayOf(0x09)
-                        characteristic.setValue(orderByte)
-                //        val descriptor = characteristic.getDescriptor(UUID_DESCRIPTOR_NOTIFY)
-                    //    descriptor.setValue(orderByte)
-                 //       Log.d(TAG, "onServicesDiscovered() 连接指定UUID的descriptor结果=" + descriptor)
-                     //   descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)//这句话好像设不设置都能触发notify啊
-              //          descriptor.setValue(orderByte)
-                        gatt.setCharacteristicNotification(characteristic,true)
-                        gatt.writeCharacteristic(characteristic)
-                 //       gatt.writeDescriptor(descriptor)
-                    }
+                ifServiceConnect = true
+                //               Log.d(TAG, "onServicesDiscovered() 发现BLE设备的Service 且建立GATT连接成功");
+//                val bluetoothGattService = gatt.getService(UUID_SERVICE)
+//                if (bluetoothGattService == null) {
+//                    Log.d(TAG, "onServicesDiscovered() 连接指定UUID的Service失败")
+//                } else {
+//                    Log.d(TAG, "onServicesDiscovered() 连接指定UUID的Service成功")
+//                    val characteristic = bluetoothGattService.getCharacteristic(UUID_CHARACTERISTIC_WRITE)
+//                    if (characteristic == null) {
+//                        Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics失败")
+//                    } else {
+//                        Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics成功1 =" + characteristic.permissions)
+//                        val orderByte: ByteArray = byteArrayOf(0x09)
+//                        characteristic.setValue(orderByte)
+//                //        val descriptor = characteristic.getDescriptor(UUID_DESCRIPTOR_NOTIFY)
+//                    //    descriptor.setValue(orderByte)
+//                 //       Log.d(TAG, "onServicesDiscovered() 连接指定UUID的descriptor结果=" + descriptor)
+//                     //   descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)//这句话好像设不设置都能触发notify啊
+//              //          descriptor.setValue(orderByte)
+//                        gatt.setCharacteristicNotification(characteristic,true)
+//                        gatt.writeCharacteristic(characteristic)
+//                 //       gatt.writeDescriptor(descriptor)
+//                    }
+//
+//                }
 
-                }
-
-                //    =========虾米智联写数据===
-//                                Log.d(TAG, "onServicesDiscovered() 发现BLE设备的Service 且建立GATT连接成功")
-//                //   initServiceAndChara(gatt);
+                // =========虾米智联写数据===
+                updataUIHandler.sendEmptyMessageDelayed(3, 0)
+                Log.d(TAG, "onServicesDiscovered() 发现BLE设备的Service 且建立GATT连接成功")
 //                val bluetoothGattService = gatt.getService(UUID_SERVICE)
 //                if (bluetoothGattService == null) {
 //                    Log.d(TAG, "onServicesDiscovered() 连接指定UUID的Service失败")
@@ -179,24 +290,25 @@ class DataControlActivity : AppCompatActivity() {
 //                        Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics成功1 =" + characteristic.permissions)
 //                        val tokenByte: ByteArray = ByteUtil.putInt(123)
 //                        val orderByte: ByteArray = byteArrayOf(0x00)
-//                    //    characteristic.setValue(orderByte)
+//                        //    characteristic.setValue(orderByte)
 //                        val descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG)
 ////                        for(index in descriptor){
 ////                            Log.d(TAG, "onServicesDiscovered() 连接指定UUID的descriptor结果=" + index.uuid)
 ////                        }
-//
-//              //          descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)//这句话好像设不设置都能触发notify啊
-//                        descriptor.setValue(  BLEDeviceCommand.parseBLEByte(
-//                            BLEDeviceCommand.COMMAND_OPEN_BIKE,
-//                            tokenByte,
-//                            orderByte
-//                        ))
-//                        gatt.setCharacteristicNotification(characteristic,true)
+//                        //          descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)//这句话好像设不设置都能触发notify啊
+//                        descriptor.setValue(
+//                            BLEDeviceCommand.parseBLEByte(
+//                                BLEDeviceCommand.COMMAND_OPEN_BIKE,
+//                                tokenByte,
+//                                orderByte
+//                            )
+//                        )
+//                        gatt.setCharacteristicNotification(characteristic, true)
 //                        gatt.writeDescriptor(descriptor)
 //                    }
 //
 //                }
-//
+
 
                 //    =========虾米智联写数据===测试没问题
 //                val characteristic = gatt.getService(UUID_SERVICE).getCharacteristic(SERVER_TX_UUID)
@@ -273,6 +385,8 @@ class DataControlActivity : AppCompatActivity() {
                 //       Log.d(TAG, "onServicesDiscovered: GATT 服务连接成功 status=$status")
             } else {
                 Log.d(TAG, "onServicesDiscovered: GATT 服务连接失败 status=$status")
+                ifServiceConnect = true
+                updataUIHandler.sendEmptyMessageDelayed(4, 0)
             }
 
         }
@@ -307,7 +421,7 @@ class DataControlActivity : AppCompatActivity() {
             for (index in characteristic.value) {
                 Log.d(TAG, "onCharacteristicChanged111: index= " + index)
             }
-    //        Log.d(TAG, "onCharacteristicChanged: 2222222=$valueStr" + " value=" + characteristic.value[0])
+            //        Log.d(TAG, "onCharacteristicChanged: 2222222=$valueStr" + " value=" + characteristic.value[0])
         }
 
         override fun onDescriptorRead(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
@@ -317,118 +431,39 @@ class DataControlActivity : AppCompatActivity() {
 
         override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
             super.onDescriptorWrite(gatt, descriptor, status)
-       //     Log.d(TAG, "onDescriptorWrite: descriptor="+descriptor.value[0])
+            //     Log.d(TAG, "onDescriptorWrite: descriptor="+descriptor.value[0])
             for (index in descriptor.value) {
                 Log.d(TAG, "onDescriptorWrite: index= " + index)
             }
         }
     }
 
-    //    /**
-    //     * 判断Service和Characteristic的类型 读写
-    //     */
-    //    public static void initServiceAndChara(int intProperties) {
-    //        if ((intProperties & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
-    //            read_UUID_chara = characteristic.getUuid();
-    //            read_UUID_service = bluetoothGattService.getUuid();
-    //            Log.d(TAG, "read_chara=" + read_UUID_chara + "----read_service=" + read_UUID_service);
-    //        }
-    //        if ((intProperties & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
-    //            write_UUID_chara = characteristic.getUuid();
-    //            write_UUID_service = bluetoothGattService.getUuid();
-    //            Log.d(TAG, "write_chara=" + write_UUID_chara + "----write_service=" + write_UUID_service);
-    //        }
-    //        if ((intProperties & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
-    //            write_UUID_chara = characteristic.getUuid();
-    //            write_UUID_service = bluetoothGattService.getUuid();
-    //            Log.d(TAG, "write_chara=" + write_UUID_chara + "----write_service=" + write_UUID_service);
-    //
-    //        }
-    //        if ((intProperties & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-    //            notify_UUID_chara = characteristic.getUuid();
-    //            notify_UUID_service = bluetoothGattService.getUuid();
-    //            Log.d(TAG, "notify_chara=" + notify_UUID_chara + "----notify_service=" + notify_UUID_service);
-    //        }
-    //        if ((intProperties & BluetoothGattCharacteristic.PROPERTY_INDICATE) > 0) {
-    //            indicate_UUID_chara = characteristic.getUuid();
-    //            indicate_UUID_service = bluetoothGattService.getUuid();
-    //            Log.d(TAG, "indicate_chara=" + indicate_UUID_chara + "----indicate_service=" + indicate_UUID_service);
-    //
-    //        }
-    //    }
 
-
-    //    /**
-    //     * 判断Service和Characteristic的类型 读写
-    //     */
-    //    private void initServiceAndChara(BluetoothGatt mBluetoothGatt){
-    //        UUID read_UUID_chara;
-    //        UUID read_UUID_service;
-    //        UUID write_UUID_chara;
-    //        UUID write_UUID_service;
-    //        UUID notify_UUID_chara;
-    //        UUID notify_UUID_service;
-    //        UUID indicate_UUID_chara;
-    //        UUID indicate_UUID_service;
-    //        List<BluetoothGattService> bluetoothGattServices= mBluetoothGatt.getServices();
-    //        for (BluetoothGattService bluetoothGattService:bluetoothGattServices){
-    //            List<BluetoothGattCharacteristic> characteristics=bluetoothGattService.getCharacteristics();
-    //            for (BluetoothGattCharacteristic characteristic:characteristics){
-    //                int charaProp = characteristic.getProperties();
-    //                if ((charaProp & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
-    //                    read_UUID_chara=characteristic.getUuid();
-    //                    read_UUID_service=bluetoothGattService.getUuid();
-    //                    Log.d(TAG,"read_chara="+read_UUID_chara+"----read_service="+read_UUID_service);
-    //                }
-    //                if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
-    //                    write_UUID_chara=characteristic.getUuid();
-    //                    write_UUID_service=bluetoothGattService.getUuid();
-    //                    Log.d(TAG,"write_chara="+write_UUID_chara+"----write_service="+write_UUID_service);
-    //                }
-    //                if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) > 0) {
-    //                    write_UUID_chara=characteristic.getUuid();
-    //                    write_UUID_service=bluetoothGattService.getUuid();
-    //                    Log.d(TAG,"write_chara="+write_UUID_chara+"----write_service="+write_UUID_service);
-    //
-    //                }
-    //                if ((charaProp & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-    //                    notify_UUID_chara=characteristic.getUuid();
-    //                    notify_UUID_service=bluetoothGattService.getUuid();
-    //                    Log.d(TAG,"notify_chara="+notify_UUID_chara+"----notify_service="+notify_UUID_service);
-    //                }
-    //                if ((charaProp & BluetoothGattCharacteristic.PROPERTY_INDICATE) > 0) {
-    //                    indicate_UUID_chara=characteristic.getUuid();
-    //                    indicate_UUID_service=bluetoothGattService.getUuid();
-    //                    Log.d(TAG,"indicate_chara="+indicate_UUID_chara+"----indicate_service="+indicate_UUID_service);
-    //
-    //                }
-    //            }
-    //        }
-    //    }
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
         super.onDestroy()
         if (bluetoothGatt != null) {
             Log.d(TAG, "onDestroy  disconnect")
+            bluetoothGatt?.close()
             bluetoothGatt?.disconnect()
         }
     }
 
     companion object {
         private val TAG = "DataControlActivity"
-        private val UUID_SERVICE =
-            java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7")//蓝牙串口的通用UUID,UUID是什么东西
-        private val UUID_CHARACTERISTIC_READ = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FC")
-        private val UUID_CHARACTERISTIC_WRITE = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FD")
-        private val UUID_DESCRIPTOR = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FE")
-        private val UUID_DESCRIPTOR_NOTIFY = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FF")
-//
 //        private val UUID_SERVICE =
 //            java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7")//蓝牙串口的通用UUID,UUID是什么东西
-//        private val SERVER_TX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CBA")//写CHARACTERISTIC
-//        private val SERVER_RX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB9")//读CHARACTERISTIC
-//        private val CLIENT_CHARACTERISTIC_CONFIG =
-//            java.util.UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")//默认de
+//        private val UUID_CHARACTERISTIC_READ = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FC")
+//        private val UUID_CHARACTERISTIC_WRITE = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FD")
+//        private val UUID_DESCRIPTOR = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FE")
+//        private val UUID_DESCRIPTOR_NOTIFY = java.util.UUID.fromString("00001101-0000-1000-8000-00805F9B34FF")
+
+        private val UUID_SERVICE =
+            java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB7")//蓝牙串口的通用UUID,UUID是什么东西
+        private val SERVER_TX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CBA")//写CHARACTERISTIC
+        private val SERVER_RX_UUID = java.util.UUID.fromString("0783B03E-8535-B5A0-7140-A304D2495CB9")//读CHARACTERISTIC
+        private val CLIENT_CHARACTERISTIC_CONFIG =
+            java.util.UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")//默认de
 
     }
 }

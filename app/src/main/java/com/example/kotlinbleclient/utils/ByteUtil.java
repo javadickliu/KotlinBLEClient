@@ -1,4 +1,4 @@
-package com.example.kotlinbleclient;
+package com.example.kotlinbleclient.utils;
 
 /**
  * Created by bnv on 2016/3/14.

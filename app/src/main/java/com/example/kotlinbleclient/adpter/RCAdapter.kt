@@ -1,10 +1,14 @@
 package com.example.kotlinbleclient.adpter
 
 import android.bluetooth.BluetoothDevice
+import android.content.Context
+import android.graphics.drawable.BitmapDrawable
+import android.media.Image
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -13,7 +17,7 @@ import com.example.kotlinbleclient.R
 /**
  * rcview适配器
  */
-class RCAdapter(private var mDatas: List<BluetoothDevice>?) : RecyclerView.Adapter<RCAdapter.VH>() {
+class RCAdapter(private var mDatas: List<BluetoothDevice>?,val context:Context) : RecyclerView.Adapter<RCAdapter.VH>() {
     private var listenr: ItemClickListenr? = null
 
     fun getmDatas(): List<BluetoothDevice>? {
@@ -53,7 +57,6 @@ class RCAdapter(private var mDatas: List<BluetoothDevice>?) : RecyclerView.Adapt
     inner class VH(v: View) : RecyclerView.ViewHolder(v) {
         val title: TextView
         val bg: LinearLayout
-
         init {
             title = v.findViewById(R.id.mainactivity_recyclerview_item_bluetooth_name) as TextView
             bg = v.findViewById(R.id.rc_item_bg) as LinearLayout

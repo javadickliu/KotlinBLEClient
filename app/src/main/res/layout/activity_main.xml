@@ -6,43 +6,18 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         tools:context=".MainActivity">
-    <LinearLayout
-            android:id="@+id/mainactivity_opentest_bg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-        <Button
-                android:id="@+id/mainactivity_openbike"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="启动单车"/>
-        <Button
-                android:id="@+id/mainactivity_stopbike"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="关闭单车"/>
-    </LinearLayout>
 
-    <LinearLayout
-            android:layout_below="@id/mainactivity_opentest_bg"
-            android:id="@+id/mainactivity_bg"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+   <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+           android:id="@+id/mainactivity_swiperefresh"
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content">
+       <androidx.recyclerview.widget.RecyclerView
+               android:id="@+id/mainactivity_bledevice_rc"
+               android:layout_width="match_parent"
+               android:layout_height="match_parent"
+       >
+       </androidx.recyclerview.widget.RecyclerView>
 
-        <Button
-                android:id="@+id/mainactivity_startscan_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:text="开始扫描"/>
-    </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/mainactivity_bledevice_rc"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/mainactivity_bg">
-
-    </androidx.recyclerview.widget.RecyclerView>
+   </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </RelativeLayout>

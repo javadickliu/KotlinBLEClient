@@ -1,32 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".DataControlActivity">
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context=".DataControlActivity">
     <LinearLayout
-        android:id="@+id/datacontrolactivity_bg"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:orientation="vertical">
-        <TextView
-            android:id="@+id/datacontrolactivity_deviceinfo_tv"
+            android:id="@+id/datacontrolactivity_bg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="20sp"/>
+            android:layout_margin="10dp"
+            android:orientation="vertical">
         <TextView
-            android:id="@+id/datacontrolactivity_devicestatus_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="20sp"/>
+                android:id="@+id/datacontrolactivity_deviceinfo_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"/>
+        <TextView
+                android:id="@+id/datacontrolactivity_devicestatus_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"/>
+        <TextView
+                android:id="@+id/datacontrolactivity_servicestatus_tv"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="20sp"/>
     </LinearLayout>
+    <Button
+            android:id="@+id/datacontrolactivity_reconnect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_below="@id/datacontrolactivity_bg"
+            android:text="重连"/>
+    <LinearLayout android:layout_width="match_parent"
+                  android:layout_height="wrap_content"
+                  android:layout_below="@id/datacontrolactivity_reconnect"
+                  android:orientation="vertical">
+        <LinearLayout
+                android:id="@+id/datacontrolactivity_control_bg"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            <Button
+                    android:id="@+id/datacontrolactivity_opennbike"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="启动"
+                    android:layout_margin="10dp"/>
+            <Button
+                    android:id="@+id/datacontrolactivity_stopbike"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="设防"
+                    android:layout_margin="10dp"/>
+
+        </LinearLayout>
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            <Button
+                    android:id="@+id/datacontrolactivity_openbatlock"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="打开电池锁"
+                    android:layout_margin="10dp"/>
+            <Button
+                    android:id="@+id/datacontrolactivity_closebatlock"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="关闭电池锁"
+                    android:layout_margin="10dp"/>
+        </LinearLayout>
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            <Button
+                    android:id="@+id/datacontrolactivity_openwheellock"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="打开后轮锁"
+                    android:layout_margin="10dp"/>
+            <Button
+                    android:id="@+id/datacontrolactivity_closewheellock"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="关闭后轮锁"
+                    android:layout_margin="10dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+            <Button
+                    android:id="@+id/datacontrolactivity_openelecric"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="打开车辆电路0"
+                    android:layout_margin="10dp"/>
+            <Button
+                    android:id="@+id/datacontrolactivity_closeelectric"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="关闭车辆电路"
+                    android:layout_margin="10dp"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+
     <ExpandableListView
-        android:id="@+id/datacontrolactivity_bleservice_expandlv"
-        android:layout_below="@id/datacontrolactivity_bg"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
+            android:id="@+id/datacontrolactivity_bleservice_expandlv"
+            android:layout_below="@id/datacontrolactivity_bg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
     </ExpandableListView>
 
 </RelativeLayout>

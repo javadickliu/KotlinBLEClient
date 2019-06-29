@@ -1,4 +1,4 @@
-package com.example.kotlinbleclient;
+package com.example.kotlinbleclient.utils;
 
 import java.util.UUID;
 
