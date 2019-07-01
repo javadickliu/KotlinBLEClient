@@ -9,11 +9,14 @@ import android.widget.TextView
 import com.example.kotlinbleclient.adpter.MyExpandListViewAdapter
 import java.util.ArrayList
 import android.R.attr.data
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothGattDescriptor
 import android.content.Intent
 import android.view.View
+import android.widget.ProgressBar
 import com.example.kotlinbleclient.adpter.RCAdapter
 import com.example.kotlinbleclient.utils.ByteUtil
+import com.example.kotlinbleclient.view.CustomDialog
 import kotlinx.android.synthetic.main.activity_data_control.*
 import org.jetbrains.anko.toast
 
@@ -44,24 +47,33 @@ class DataControlActivity : AppCompatActivity() {
             } else if (msg.what == 3) {
                 Log.d(TAG, "handleMessage() 刷新至已连接状态")
                 datacontrolactivity_servicestatus_tv.text = "Service Status:" + "已连接"
+                datacontrolactivity_connect_progress.visibility=View.INVISIBLE
+                datacontrolactivity_reconnectbtn.visibility=View.VISIBLE
             } else if (msg.what == 4) {
                 Log.d(TAG, "handleMessage() 刷新至断开连接状态")
+                datacontrolactivity_connect_progress.visibility=View.INVISIBLE
+                datacontrolactivity_reconnectbtn.visibility=View.VISIBLE
                 datacontrolactivity_servicestatus_tv.text = "Service Status:" + "断开连接"
             }
         }
     }
-
+    @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_data_control)
+        setSupportActionBar(datacontrolactivity_toolbar)
+        supportActionBar?.setDisplayShowTitleEnabled(false)
+         datacontrolactivity_toolbar_back.setOnClickListener {
+             finish()
+         }
         val bluetoothDevice = intent.getParcelableExtra<Parcelable>("key_bluetoothdevice") as BluetoothDevice
         deviceInfoTv = findViewById(R.id.datacontrolactivity_deviceinfo_tv) as TextView
         deviceStatusTv = findViewById(R.id.datacontrolactivity_devicestatus_tv) as TextView
         val deviceInfo = "Address:" + bluetoothDevice.address + "\n" +
                 "Name:" + bluetoothDevice.name
         deviceInfoTv!!.text = deviceInfo
-        deviceStatusTv!!.text = "Status:" + "未连接"
-        datacontrolactivity_servicestatus_tv.setText("Service Status:" + "未连接")
+        deviceStatusTv!!.text = "Status:" + "连接中"
+        datacontrolactivity_servicestatus_tv.setText("Service Status:" + "连接中")
         datacontrolactivity_opennbike.setOnClickListener(btnClickListenr)
         datacontrolactivity_stopbike.setOnClickListener(btnClickListenr)
         datacontrolactivity_openbatlock.setOnClickListener(btnClickListenr)
@@ -97,15 +109,21 @@ class DataControlActivity : AppCompatActivity() {
             Log.d(TAG, "onCreate() 设备已经连接过,不需要要再次连接")
         }
 
-        datacontrolactivity_reconnect.setOnClickListener {
+        datacontrolactivity_reconnectbtn.setOnClickListener {
             if (ifServiceConnect) {
                 toast("已连接成功,不需要重连")
             } else {
                 toast("重连中.....")
+                datacontrolactivity_connect_progress.visibility=View.VISIBLE
+                datacontrolactivity_reconnectbtn.visibility=View.INVISIBLE
                 bluetoothGatt?.close()
                 bluetoothGatt?.disconnect()
                 bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, true, MyBluetoothGattCallback())
             }
+        }
+        datacontrolactivity_changetoken_tv.setOnClickListener {
+            var customDialog=CustomDialog(this)
+            customDialog.show()
         }
 
     }
@@ -228,6 +246,7 @@ class DataControlActivity : AppCompatActivity() {
 
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                ifServiceConnect=false
                 updataUIHandler.sendEmptyMessageDelayed(2, 0)
                 updataUIHandler.sendEmptyMessageDelayed(4, 0)
                 Log.d(TAG, "onConnectionStateChange  从GATT连接断开 status=" + status)
@@ -262,7 +281,7 @@ class DataControlActivity : AppCompatActivity() {
 //                    } else {
 //                        Log.d(TAG, "onServicesDiscovered() 连接指定UUID的characteristics成功1 =" + characteristic.permissions)
 //                        val orderByte: ByteArray = byteArrayOf(0x09)
-//                        characteristic.setValue(orderByte)
+//                        characteristic.setValue(orderByte)response
 //                //        val descriptor = characteristic.getDescriptor(UUID_DESCRIPTOR_NOTIFY)
 //                    //    descriptor.setValue(orderByte)
 //                 //       Log.d(TAG, "onServicesDiscovered() 连接指定UUID的descriptor结果=" + descriptor)
@@ -385,7 +404,7 @@ class DataControlActivity : AppCompatActivity() {
                 //       Log.d(TAG, "onServicesDiscovered: GATT 服务连接成功 status=$status")
             } else {
                 Log.d(TAG, "onServicesDiscovered: GATT 服务连接失败 status=$status")
-                ifServiceConnect = true
+                ifServiceConnect = false
                 updataUIHandler.sendEmptyMessageDelayed(4, 0)
             }
 

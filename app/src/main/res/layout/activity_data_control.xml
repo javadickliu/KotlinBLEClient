@@ -5,10 +5,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 tools:context=".DataControlActivity">
+    <androidx.appcompat.widget.Toolbar
+            android:id="@+id/datacontrolactivity_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary">
+        <ImageView
+                android:id="@+id/datacontrolactivity_toolbar_back"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:background="@drawable/icon_title_back"/>
+    </androidx.appcompat.widget.Toolbar>
     <LinearLayout
             android:id="@+id/datacontrolactivity_bg"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_below="@id/datacontrolactivity_toolbar"
             android:layout_margin="10dp"
             android:orientation="vertical">
         <TextView
@@ -16,6 +28,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="20sp"/>
+
         <TextView
                 android:id="@+id/datacontrolactivity_devicestatus_tv"
                 android:layout_width="wrap_content"
@@ -26,17 +39,48 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="20sp"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+            <TextView
+                    android:id="@+id/datacontrolactivity_servicestoken_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="Token:0x0a0a0505"/>
+            <TextView
+                    android:id="@+id/datacontrolactivity_changetoken_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:layout_marginStart="10dp"
+                    android:textColor="@android:color/holo_blue_bright"
+                    android:text="@string/change_token"/>
+        </LinearLayout>
+
+
     </LinearLayout>
-    <Button
-            android:id="@+id/datacontrolactivity_reconnect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
+    <RelativeLayout
             android:layout_below="@id/datacontrolactivity_bg"
-            android:text="重连"/>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/datacontrolactivity_reconnect_bg">
+        <Button
+                android:id="@+id/datacontrolactivity_reconnectbtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"
+                android:visibility="invisible"
+                android:text="重连"/>
+        <ProgressBar
+                android:id="@+id/datacontrolactivity_connect_progress"
+                android:visibility="visible"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerHorizontal="true"/>
+    </RelativeLayout>
+
     <LinearLayout android:layout_width="match_parent"
                   android:layout_height="wrap_content"
-                  android:layout_below="@id/datacontrolactivity_reconnect"
+                  android:layout_below="@id/datacontrolactivity_reconnect_bg"
                   android:orientation="vertical">
         <LinearLayout
                 android:id="@+id/datacontrolactivity_control_bg"
@@ -103,7 +147,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="打开车辆电路0"
+                    android:text="打开车辆电路"
                     android:layout_margin="10dp"/>
             <Button
                     android:id="@+id/datacontrolactivity_closeelectric"

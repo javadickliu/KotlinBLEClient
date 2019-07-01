@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">虾米BLE</string>
+    <string name="change_token"><u>修改</u></string>
 </resources>
