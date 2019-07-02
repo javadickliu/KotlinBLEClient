@@ -18,7 +18,7 @@
     </androidx.appcompat.widget.Toolbar>
     <LinearLayout
             android:id="@+id/datacontrolactivity_bg"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/datacontrolactivity_toolbar"
             android:layout_margin="10dp"
@@ -44,14 +44,13 @@
                     android:id="@+id/datacontrolactivity_servicestoken_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="20sp"
-                    android:text="Token:0x0a0a0505"/>
+                    android:textSize="20sp"/>
             <TextView
                     android:id="@+id/datacontrolactivity_changetoken_tv"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="20sp"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="8dp"
                     android:textColor="@android:color/holo_blue_bright"
                     android:text="@string/change_token"/>
         </LinearLayout>

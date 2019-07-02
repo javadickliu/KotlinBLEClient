@@ -16,6 +16,7 @@ import android.view.View
 import android.widget.ProgressBar
 import com.example.kotlinbleclient.adpter.RCAdapter
 import com.example.kotlinbleclient.utils.ByteUtil
+import com.example.kotlinbleclient.utils.SPUtils
 import com.example.kotlinbleclient.view.CustomDialog
 import kotlinx.android.synthetic.main.activity_data_control.*
 import org.jetbrains.anko.toast
@@ -47,25 +48,26 @@ class DataControlActivity : AppCompatActivity() {
             } else if (msg.what == 3) {
                 Log.d(TAG, "handleMessage() 刷新至已连接状态")
                 datacontrolactivity_servicestatus_tv.text = "Service Status:" + "已连接"
-                datacontrolactivity_connect_progress.visibility=View.INVISIBLE
-                datacontrolactivity_reconnectbtn.visibility=View.VISIBLE
+                datacontrolactivity_connect_progress.visibility = View.INVISIBLE
+                datacontrolactivity_reconnectbtn.visibility = View.VISIBLE
             } else if (msg.what == 4) {
                 Log.d(TAG, "handleMessage() 刷新至断开连接状态")
-                datacontrolactivity_connect_progress.visibility=View.INVISIBLE
-                datacontrolactivity_reconnectbtn.visibility=View.VISIBLE
+                datacontrolactivity_connect_progress.visibility = View.INVISIBLE
+                datacontrolactivity_reconnectbtn.visibility = View.VISIBLE
                 datacontrolactivity_servicestatus_tv.text = "Service Status:" + "断开连接"
             }
         }
     }
+
     @SuppressLint("RestrictedApi")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_data_control)
         setSupportActionBar(datacontrolactivity_toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
-         datacontrolactivity_toolbar_back.setOnClickListener {
-             finish()
-         }
+        datacontrolactivity_toolbar_back.setOnClickListener {
+            finish()
+        }
         val bluetoothDevice = intent.getParcelableExtra<Parcelable>("key_bluetoothdevice") as BluetoothDevice
         deviceInfoTv = findViewById(R.id.datacontrolactivity_deviceinfo_tv) as TextView
         deviceStatusTv = findViewById(R.id.datacontrolactivity_devicestatus_tv) as TextView
@@ -74,6 +76,13 @@ class DataControlActivity : AppCompatActivity() {
         deviceInfoTv!!.text = deviceInfo
         deviceStatusTv!!.text = "Status:" + "连接中"
         datacontrolactivity_servicestatus_tv.setText("Service Status:" + "连接中")
+        datacontrolactivity_servicestoken_tv.setText(
+            "Token(十进制):" + SPUtils.get(
+                this@DataControlActivity,
+                "token",
+                "168428805"
+            )
+        )
         datacontrolactivity_opennbike.setOnClickListener(btnClickListenr)
         datacontrolactivity_stopbike.setOnClickListener(btnClickListenr)
         datacontrolactivity_openbatlock.setOnClickListener(btnClickListenr)
@@ -85,8 +94,19 @@ class DataControlActivity : AppCompatActivity() {
         expandableListView = findViewById(R.id.datacontrolactivity_bleservice_expandlv) as ExpandableListView
         myExpandListViewAdapter = MyExpandListViewAdapter()
         expandableListView!!.setAdapter(myExpandListViewAdapter)
-        //   Log.d(TAG, "onCreate: myExpandListViewAdapter=" + myExpandListViewAdapter!!)
+        datacontrolactivity_changetoken_tv.isClickable = true
+        datacontrolactivity_changetoken_tv.setOnClickListener {
+            val customDialog = CustomDialog(this)
+            customDialog.setConfirmClickListener(object : CustomDialog.ConfirmClickListener {
+                override fun click(content: String) {
+                    datacontrolactivity_servicestoken_tv.setText("Token(十进制):" + content)
+                    SPUtils.put(this@DataControlActivity, "token", content)
+                    customDialog.hide()
+                }
 
+            })
+            customDialog.show()
+        }
         //=======开启BLE 设备GATT======
         Log.d(
             TAG,
@@ -114,17 +134,14 @@ class DataControlActivity : AppCompatActivity() {
                 toast("已连接成功,不需要重连")
             } else {
                 toast("重连中.....")
-                datacontrolactivity_connect_progress.visibility=View.VISIBLE
-                datacontrolactivity_reconnectbtn.visibility=View.INVISIBLE
+                datacontrolactivity_connect_progress.visibility = View.VISIBLE
+                datacontrolactivity_reconnectbtn.visibility = View.INVISIBLE
                 bluetoothGatt?.close()
                 bluetoothGatt?.disconnect()
                 bluetoothGatt = bluetoothDevice.connectGatt(this@DataControlActivity, true, MyBluetoothGattCallback())
             }
         }
-        datacontrolactivity_changetoken_tv.setOnClickListener {
-            var customDialog=CustomDialog(this)
-            customDialog.show()
-        }
+
 
     }
 
@@ -133,49 +150,48 @@ class DataControlActivity : AppCompatActivity() {
      */
     private val btnClickListenr = object : View.OnClickListener {
         override fun onClick(v: View?) {
+            if (!ifServiceConnect) {
+                toast("蓝牙没有连接成功,请尝试连接")
+                return
+            }
             var commandByte: Byte? = null
             var tokenByte: ByteArray? = null
             var orderByte: ByteArray? = null
+            val tokenString = SPUtils.get(this@DataControlActivity, "token", "168428805") as String
+            tokenByte = ByteUtil.putInt(tokenString.toInt())
+            toast("tokenString.toInt()="+tokenString.toInt())
             when (v?.id) {
                 R.id.datacontrolactivity_opennbike -> {
                     commandByte = BLEDeviceCommand.COMMAND_OPEN_BIKE
-                    tokenByte = ByteUtil.putInt(123)
-                    //      tokenByte = byteArrayOf(0x0a, 0x0a, 0x05, 0x05)
+                    //tokenByte = byteArrayOf(0x0a, 0x0a, 0x05, 0x05)
                     orderByte = byteArrayOf(0x00)
                 }
                 R.id.datacontrolactivity_stopbike -> {
                     commandByte = BLEDeviceCommand.COMMAND_STOP_BIKE
-                    tokenByte = ByteUtil.putInt(123)
                     orderByte = byteArrayOf(0x01)
                 }
                 R.id.datacontrolactivity_openbatlock -> {
                     commandByte = BLEDeviceCommand.COMMAND_OPEN_BATLOCK
-                    tokenByte = ByteUtil.putInt(123)
                     orderByte = byteArrayOf(0x00)
                 }
                 R.id.datacontrolactivity_closebatlock -> {
                     commandByte = BLEDeviceCommand.COMMAND_CLOSE_BATLOCK
-                    tokenByte = ByteUtil.putInt(123)
                     orderByte = byteArrayOf(0x01)
                 }
                 R.id.datacontrolactivity_openwheellock -> {
                     commandByte = BLEDeviceCommand.COMMAND_OPEN_WHELLLOCK
-                    tokenByte = ByteUtil.putInt(123)
                     orderByte = byteArrayOf(0x00)
                 }
                 R.id.datacontrolactivity_closewheellock -> {
                     commandByte = BLEDeviceCommand.COMMAND_CLOSE_WHELLLOCK
-                    tokenByte = ByteUtil.putInt(123)
                     orderByte = byteArrayOf(0x01)
                 }
                 R.id.datacontrolactivity_openelecric -> {
                     commandByte = BLEDeviceCommand.COMMAND_OPEN_ELECTIC
-                    tokenByte = ByteUtil.putInt(123)
                     orderByte = byteArrayOf(0x01)
                 }
                 R.id.datacontrolactivity_closeelectric -> {
                     commandByte = BLEDeviceCommand.COMMAND_CLOSE_ELECTIC
-                    tokenByte = ByteUtil.putInt(123)
                     orderByte = byteArrayOf(0x00)
                 }
             }
@@ -246,7 +262,7 @@ class DataControlActivity : AppCompatActivity() {
 
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                ifServiceConnect=false
+                ifServiceConnect = false
                 updataUIHandler.sendEmptyMessageDelayed(2, 0)
                 updataUIHandler.sendEmptyMessageDelayed(4, 0)
                 Log.d(TAG, "onConnectionStateChange  从GATT连接断开 status=" + status)
